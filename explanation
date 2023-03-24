@@ -1,0 +1,199 @@
+1. downloading yolo files
+2. yolo with image
+3. yolo with webcam
+4. bounding box in real time
+5. className check
+6. confidence check
+7. mask the other parts of video
+8. how sort works
+9. draw line between roads
+10.find center point of the object
+11. assign id for each object
+12. count if object crosses the line
+
+
+################ downloading yolo files ##################
+from ultralytics import YOLO
+
+model = YOLO("yolov8n.pt")
+
+result = model('zidane.jpg', show=True)
+
+
+
+
+############### yolo with image ##############
+from ultralytics import YOLO
+import cv2
+
+model = YOLO("../ModelPath/yolov8n.pt")
+
+img = cv2.imread("filename")
+
+results = model(img, show=True)
+
+cv2.waitKey(0)
+
+
+
+
+
+######### yolo with webcam ###########
+from ultralytics import YOLO
+import cv2
+
+model = YOLO("../ModelPath/yolov8n.pt")
+
+
+cap = cv2.VideoCapture(0)  # for camera
+cap.set(3, 1280)
+cap.set(4, 720)
+    (or)
+cap = cv2.VideoCapture('filename')  # for video
+
+while True:
+    success, img = cap.read()
+    results = model(img, stream=True)
+    cv2.imshow("Images", img)
+    cv2.waitKey(1)
+
+
+
+
+
+########## bounding box in real time ##########
+
+for r in results:
+    boxes = r.boxes
+    for box in boxes:
+        x1, y1, x2, y2 = box.xyxy[0]
+        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+        w, h = x2-x1, y2-y1
+
+        cvzone.cornerRect(img, (x1, y1, w, h))
+
+
+
+
+
+################# className check ###############
+
+className = classNames = ["person", "bicycle", "car", "motorbike", "aeroplane", "bus", "train", "truck", "boat",
+               "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat",
+              "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella",
+               "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat",
+               "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup",
+               "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli",
+               "carrot", "hot dog", "pizza", "donut", "cake", "chair", "sofa", "pottedplant", "bed",
+               "diningtable", "toilet", "tvmonitor", "laptop", "mouse", "remote", "keyboard", "cell phone",
+               "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors",
+               "teddy bear", "hair drier", "toothbrush"]
+
+cls = box.cls[0]
+# make it as integer value;
+              cls = int(box.cls[0])
+
+# to show the class name :  cvzone.putTextRect(img, f'{conf}', (max(0, x1), max(0, y1)),
+                             scale=1, thickness=1)
+
+
+
+
+###################### confidence check ##################
+
+conf =  box.conf[0]
+
+# make it to round off value:
+                  conf = math.ceil((box.conf[0]*100))/100
+
+# to show the conf and className value together:   cvzone.putTextRect(img, f'{currentClass} {conf}', (max(0, x1), max(0, y1)),
+                             scale=1, thickness=1)
+
+
+
+
+
+
+
+##################### mask the other parts of video ######################
+
+mask = cv2.imread('mask.png')
+
+imgRegion = cv2.bitwise_and(img, mask)
+
+results = model(imgRegion, stream=True)
+
+cv2.imshow("ImageRegion", imgRegion)
+
+
+
+
+
+######################### how sort works ####################
+
+sort used to track the particular object and used to assigned the specified id number for specified object
+
+# how to use sorts:
+# hit_streak is the total number of times it consecutively got matched with a detection in the last frames.
+# min_hits is the minimum value of hit streak of a track, required, such that it gets displayed in the outputs.
+# iou is area of overlap / area of union
+# vstack() function is used to stack the sequence of input arrays vertically to make a single array.
+
+from sort import *
+
+tracker = Sort(max_age=20, min_hits=3, iou_threshold=0.3)
+
+detections = np.empty((0, 5))
+
+currentArray = np.array([x1, y1, x2, y2, conf])
+
+detections = np.vstack((detections, currentArray))
+
+
+
+
+###################### draw line between roads ###################
+
+limits = [400, 297, 673, 297]
+
+cv2.line(img, (limits[0], limits[1]), (limits[2], limits[3]), (0, 0, 255))
+
+
+
+
+#################### find center point of the object ####################
+
+cx, cy = x1+w//2, y1+h//2
+cv2.circle(img, (cx, cy), 3, (255, 255, 255), cv2.FILLED)
+
+
+
+
+
+
+####################### assign id for each object #######################################
+
+x1, y1, x2, y2, id = result
+x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
+
+w, h = x2-x1, y2-y1
+cvzone.cornerRect(img, (x1, y1, w, h), l=8, rt=2, colorR=(255, 0, 0))
+cvzone.putTextRect(img, f'{int(id)}', (max(0, x1), max(35, y1)), scale=1, thickness=1, offset=3)
+
+
+
+
+
+
+#################### count if object crosses the line ###################################
+
+total_count = []
+
+        if limits[0] < cx < limits[2] and limits[1]-15 < cy < limits[3]+15:
+            if total_count.count(id) == 0:
+                total_count.append(id)
+                cv2.line(img, (limits[0], limits[1]), (limits[2], limits[3]), (0, 255, 0))
+
+    cvzone.putTextRect(img, f' Count: {len(total_count)}', (50, 50))
+
+
